@@ -6,13 +6,15 @@ spec:
   workspaces:
     - name: source
   steps:
-    - name: cleanup
+    - name: remove-workspace
       image: alpine:3.20
-      workingDir: $(workspaces.source.path)
+      env:
+        - name: WORKSPACE_SOURCE_PATH
+          value: $(workspaces.source.path)
       script: |
         #!/bin/sh
         set -eu
-        find . -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+        rm -rf "${WORKSPACE_SOURCE_PATH:?}/"* "${WORKSPACE_SOURCE_PATH:?}/".[!.]* "${WORKSPACE_SOURCE_PATH:?}/"..?*
 
 ---
 apiVersion: tekton.dev/v1
@@ -23,12 +25,11 @@ spec:
   workspaces:
     - name: source
   steps:
-    - name: run-unit-tests
+    - name: Run unit tests with nose
       image: python:3.9
       workingDir: $(workspaces.source.path)
       script: |
         #!/bin/sh
         set -eu
         python -m pip install -r requirements.txt
-        python -m pip install nose
         nosetests -v
